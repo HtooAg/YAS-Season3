@@ -2,10 +2,16 @@ import { Storage } from "@google-cloud/storage";
 import path from "path";
 
 // Initialize Google Cloud Storage
-const storage = new Storage({
-	keyFilename: path.join(process.cwd(), "gcs_key.json"),
-	projectId: "yas-school",
-});
+// In production (Cloud Run), use default credentials (service account)
+// In development, use key file if it exists
+const storage = new Storage(
+	process.env.NODE_ENV === "production"
+		? { projectId: "yas-school" }
+		: {
+				keyFilename: path.join(process.cwd(), "gcs_key.json"),
+				projectId: "yas-school",
+		  }
+);
 
 const bucketName = "yas-data";
 const bucket = storage.bucket(bucketName);
