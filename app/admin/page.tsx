@@ -2,6 +2,7 @@
 
 import { useGame } from "@/lib/game-context";
 import type { TeamId } from "@/lib/types";
+import { GAME_SCENARIOS } from "@/lib/scenarios";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useEffect, useState as useReactState } from "react";
@@ -143,10 +144,12 @@ export default function AdminPage() {
 			? readyTeams.length === 3
 			: readyTeams.length >= 1);
 
+	// IMPORTANT: Use GAME_SCENARIOS from code, not from gameState
+	// gameState.scenarios loses functions when serialized to JSON/GCS
 	const currentScenario =
 		gameState.scenarioIndex >= 0 &&
-		gameState.scenarioIndex < gameState.scenarios.length
-			? gameState.scenarios[gameState.scenarioIndex]
+		gameState.scenarioIndex < GAME_SCENARIOS.length
+			? GAME_SCENARIOS[gameState.scenarioIndex]
 			: null;
 
 	const allTeamsAnswered =
@@ -579,108 +582,97 @@ export default function AdminPage() {
 												</div>
 											)}
 											<div className="flex gap-4 text-sm">
-												{choice.coinsDelta != null && (
-													<span
-														className={
-															typeof choice.coinsDelta ===
-															"function"
-																? "text-blue-600"
-																: choice.coinsDelta >=
-																  0
-																? "text-green-600"
-																: "text-red-600"
-														}
-													>
-														Coins:{" "}
-														{typeof choice.coinsDelta ===
+												{/* Coins Delta */}
+												{(() => {
+													// Use first claimed team or default values
+													const sampleTeam =
+														Object.values(
+															gameState.teams
+														).find(
+															(t) => t.claimedBy
+														) || {
+															id: "A" as TeamId,
+															coins: 1000,
+															crops: 10,
+															answers: {},
+														};
+
+													const coinsValue =
+														typeof choice.coinsDelta ===
 														"function"
-															? (() => {
-																	// Calculate actual outcome using a sample team
-																	// Use first team's state or default values
-																	const sampleTeam =
-																		Object.values(
-																			gameState.teams
-																		).find(
-																			(
-																				t
-																			) =>
-																				t.claimedBy
-																		) || {
-																			coins: 1000,
-																			crops: 10,
-																		};
-																	const coinsResult =
-																		choice.coinsDelta(
-																			sampleTeam
-																		);
-																	return `${
-																		coinsResult >=
-																		0
-																			? "+"
-																			: ""
-																	}${coinsResult}`;
-															  })()
-															: `${
-																	choice.coinsDelta >=
-																	0
-																		? "+"
-																		: ""
-															  }${
-																	choice.coinsDelta
-															  }`}
-													</span>
-												)}
-												{choice.cropsDelta != null && (
-													<span
-														className={
-															typeof choice.cropsDelta ===
-															"function"
-																? "text-blue-600"
-																: choice.cropsDelta >=
-																  0
-																? "text-green-600"
-																: "text-red-600"
-														}
-													>
-														Crops:{" "}
-														{typeof choice.cropsDelta ===
+															? choice.coinsDelta(
+																	sampleTeam
+															  )
+															: typeof choice.coinsDelta ===
+															  "number"
+															? choice.coinsDelta
+															: null;
+
+													if (coinsValue === null)
+														return null;
+
+													return (
+														<span
+															className={
+																coinsValue >= 0
+																	? "text-green-600 font-semibold"
+																	: "text-red-600 font-semibold"
+															}
+														>
+															Coins:{" "}
+															{coinsValue >= 0
+																? "+"
+																: ""}
+															{coinsValue}
+														</span>
+													);
+												})()}
+
+												{/* Crops Delta */}
+												{(() => {
+													// Use first claimed team or default values
+													const sampleTeam =
+														Object.values(
+															gameState.teams
+														).find(
+															(t) => t.claimedBy
+														) || {
+															id: "A" as TeamId,
+															coins: 1000,
+															crops: 10,
+															answers: {},
+														};
+
+													const cropsValue =
+														typeof choice.cropsDelta ===
 														"function"
-															? (() => {
-																	// Calculate actual outcome using a sample team
-																	// Use first team's state or default values
-																	const sampleTeam =
-																		Object.values(
-																			gameState.teams
-																		).find(
-																			(
-																				t
-																			) =>
-																				t.claimedBy
-																		) || {
-																			coins: 1000,
-																			crops: 10,
-																		};
-																	const cropsResult =
-																		choice.cropsDelta(
-																			sampleTeam
-																		);
-																	return `${
-																		cropsResult >=
-																		0
-																			? "+"
-																			: ""
-																	}${cropsResult}`;
-															  })()
-															: `${
-																	choice.cropsDelta >=
-																	0
-																		? "+"
-																		: ""
-															  }${
-																	choice.cropsDelta
-															  }`}
-													</span>
-												)}
+															? choice.cropsDelta(
+																	sampleTeam
+															  )
+															: typeof choice.cropsDelta ===
+															  "number"
+															? choice.cropsDelta
+															: null;
+
+													if (cropsValue === null)
+														return null;
+
+													return (
+														<span
+															className={
+																cropsValue >= 0
+																	? "text-green-600 font-semibold"
+																	: "text-red-600 font-semibold"
+															}
+														>
+															Crops:{" "}
+															{cropsValue >= 0
+																? "+"
+																: ""}
+															{cropsValue}
+														</span>
+													);
+												})()}
 											</div>
 										</div>
 									))}

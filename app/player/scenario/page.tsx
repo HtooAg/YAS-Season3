@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useGame } from "@/lib/game-context";
 import { type TeamId } from "@/lib/types";
+import { GAME_SCENARIOS } from "@/lib/scenarios";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -37,9 +38,11 @@ export default function ScenarioPage() {
 
 	const myTeam =
 		myTeamId && gameState.teams ? gameState.teams[myTeamId] : null;
+	// IMPORTANT: Use GAME_SCENARIOS from code, not from gameState
+	// gameState.scenarios loses functions when serialized to JSON/GCS
 	const currentScenario =
-		gameState.scenarioIndex >= 0 && gameState.scenarios
-			? gameState.scenarios[gameState.scenarioIndex]
+		gameState.scenarioIndex >= 0 && GAME_SCENARIOS
+			? GAME_SCENARIOS[gameState.scenarioIndex]
 			: null;
 	const hasAnswered =
 		myTeam && currentScenario && myTeam.answers
@@ -370,7 +373,12 @@ export default function ScenarioPage() {
 											}`}
 										>
 											<div className="font-semibold text-slate-900 mb-1">
-												{choice.label}
+												{choice.id === "market-2-a" &&
+												myTeam
+													? `Sell Half (${Math.floor(
+															myTeam.crops / 2
+													  )} crops)`
+													: choice.label}
 											</div>
 											{choice.desc && (
 												<div className="text-sm text-slate-600 whitespace-pre-line">
@@ -378,76 +386,85 @@ export default function ScenarioPage() {
 												</div>
 											)}
 											<div className="flex gap-4 mt-2 text-sm">
-												{choice.coinsDelta !==
-													undefined &&
-													myTeam && (
-														<span
-															className={(() => {
-																const value =
-																	typeof choice.coinsDelta ===
-																	"function"
-																		? choice.coinsDelta(
-																				myTeam
-																		  )
-																		: choice.coinsDelta;
-																return value >=
+												{myTeam && (
+													<>
+														{/* Coins Delta */}
+														{(() => {
+															const coinsValue =
+																typeof choice.coinsDelta ===
+																"function"
+																	? choice.coinsDelta(
+																			myTeam
+																	  )
+																	: typeof choice.coinsDelta ===
+																	  "number"
+																	? choice.coinsDelta
+																	: null;
+
+															if (
+																coinsValue ===
+																null
+															)
+																return null;
+
+															return (
+																<span
+																	className={
+																		coinsValue >=
+																		0
+																			? "text-green-600 font-semibold"
+																			: "text-red-600 font-semibold"
+																	}
+																>
+																	Coins:{" "}
+																	{coinsValue >=
 																	0
-																	? "text-green-600 font-semibold"
-																	: "text-red-600 font-semibold";
-															})()}
-														>
-															Coins:{" "}
-															{(() => {
-																const value =
-																	typeof choice.coinsDelta ===
-																	"function"
-																		? choice.coinsDelta(
-																				myTeam
-																		  )
-																		: choice.coinsDelta;
-																return `${
-																	value >= 0
 																		? "+"
-																		: ""
-																}${value}`;
-															})()}
-														</span>
-													)}
-												{choice.cropsDelta !==
-													undefined &&
-													myTeam && (
-														<span
-															className={(() => {
-																const value =
-																	typeof choice.cropsDelta ===
-																	"function"
-																		? choice.cropsDelta(
-																				myTeam
-																		  )
-																		: choice.cropsDelta;
-																return value >=
+																		: ""}
+																	{coinsValue}
+																</span>
+															);
+														})()}
+
+														{/* Crops Delta */}
+														{(() => {
+															const cropsValue =
+																typeof choice.cropsDelta ===
+																"function"
+																	? choice.cropsDelta(
+																			myTeam
+																	  )
+																	: typeof choice.cropsDelta ===
+																	  "number"
+																	? choice.cropsDelta
+																	: null;
+
+															if (
+																cropsValue ===
+																null
+															)
+																return null;
+
+															return (
+																<span
+																	className={
+																		cropsValue >=
+																		0
+																			? "text-green-600 font-semibold"
+																			: "text-red-600 font-semibold"
+																	}
+																>
+																	Crops:{" "}
+																	{cropsValue >=
 																	0
-																	? "text-green-600 font-semibold"
-																	: "text-red-600 font-semibold";
-															})()}
-														>
-															Crops:{" "}
-															{(() => {
-																const value =
-																	typeof choice.cropsDelta ===
-																	"function"
-																		? choice.cropsDelta(
-																				myTeam
-																		  )
-																		: choice.cropsDelta;
-																return `${
-																	value >= 0
 																		? "+"
-																		: ""
-																}${value}`;
-															})()}
-														</span>
-													)}
+																		: ""}
+																	{cropsValue}
+																</span>
+															);
+														})()}
+													</>
+												)}
 											</div>
 										</button>
 									))}

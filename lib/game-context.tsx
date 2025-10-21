@@ -236,7 +236,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 			});
 
 			const team = currentState!.teams[teamId];
-			const scenario = currentState!.scenarios[scenarioIndex];
+			// IMPORTANT: Use GAME_SCENARIOS from code, not from state
+			// State scenarios lose functions when serialized to JSON/GCS
+			const scenario = GAME_SCENARIOS[scenarioIndex];
 			const choice = scenario.choices.find((c) => c.id === choiceId);
 
 			if (!choice) return;

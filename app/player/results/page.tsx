@@ -261,22 +261,44 @@ export default function ResultsPage() {
 
 			<div className="max-w-4xl mx-auto relative z-20">
 				{/* Header with Logo */}
+				{/* Header - Enhanced */}
 				<motion.div
-					initial={{ opacity: 0, y: -20 }}
-					animate={{ opacity: 1, y: 0 }}
-					className="flex items-center justify-center gap-4 mb-8 flex-col"
+					initial={{ opacity: 0, scale: 0.8 }}
+					animate={{ opacity: 1, scale: 1 }}
+					transition={{ type: "spring", duration: 0.8 }}
+					className="relative mb-4"
 				>
-					<Image
-						src="/YAS-logo.png"
-						alt="YAS Harvest"
-						width={100}
-						height={100}
-					/>
-					<div className="text-center">
-						<h1 className="text-3xl md:text-4xl font-bold text-white">
-							Game Complete!
-						</h1>
-						<p className="text-slate-300">Final Results</p>
+					{/* Glowing background effect */}
+					<div className="absolute inset-0 bg-gradient-to-r from-[#4A8B8B] via-[#5FABA8] to-[#4A8B8B] opacity-20 blur-3xl rounded-full" />
+
+					<div className="relative flex items-center justify-center gap-4 bg-gradient-to-r from-slate-800/80 via-slate-700/80 to-slate-800/80 backdrop-blur-xl rounded-2xl p-4 border-2 border-[#5FABA8]/30 shadow-2xl">
+						<div className="text-center">
+							<motion.h1
+								className="text-5xl font-black bg-gradient-to-r from-white via-[#5FABA8] to-white bg-clip-text text-transparent drop-shadow-lg"
+								animate={{
+									backgroundPosition: [
+										"0% 50%",
+										"100% 50%",
+										"0% 50%",
+									],
+								}}
+								transition={{
+									duration: 5,
+									repeat: Infinity,
+									ease: "linear",
+								}}
+								style={{ backgroundSize: "200% 200%" }}
+							>
+								🎉 Game Completed! 🎉
+							</motion.h1>
+							<motion.p
+								className="text-[#5FABA8] text-lg font-bold tracking-wider mt-1"
+								animate={{ opacity: [0.7, 1, 0.7] }}
+								transition={{ duration: 2, repeat: Infinity }}
+							>
+								✨ FINAL RESULTS ✨
+							</motion.p>
+						</div>
 					</div>
 				</motion.div>
 
