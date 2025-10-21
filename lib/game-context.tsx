@@ -60,6 +60,7 @@ interface GameContextType {
 		scenarioIndex: number,
 		choiceId: string
 	) => void;
+	submitTimePenalty: (teamId: TeamId, scenarioIndex: number) => void;
 	startGame: () => void;
 	nextScenario: () => void;
 	showWinner: () => void;
@@ -240,25 +241,21 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
 			if (!choice) return;
 
-			const newAnswers = {
-				...team.answers,
-				[scenarioIndex]: {
-					choiceId,
-					timestamp: Date.now(),
-				},
-			};
+			// Calculate deltas - simple and straightforward
+			let coinsDelta =
+				typeof choice.coinsDelta === "function"
+					? choice.coinsDelta(team)
+					: choice.coinsDelta || 0;
 
-			let coinsDelta = choice.coinsDelta || 0;
-			let cropsDelta = choice.cropsDelta || 0;
-
-			if (choice.fx) {
-				const result = choice.fx(team);
-				coinsDelta = result.coinsDelta || coinsDelta;
-				cropsDelta = result.cropsDelta || cropsDelta;
-			}
+			let cropsDelta =
+				typeof choice.cropsDelta === "function"
+					? choice.cropsDelta(team)
+					: choice.cropsDelta || 0;
 
 			// Apply timer bonus/penalty
-			let timerMessage = "";
+			let timerBonus = 0;
+			let timerPenalty = 0;
+
 			if (
 				currentState!.adminOnly.timerEnabled &&
 				currentState!.adminOnly.currentTimer
@@ -270,14 +267,112 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
 				if (secondsRemaining > 0) {
 					// Completed within time - bonus
-					coinsDelta += 50;
-					timerMessage = " ⚡ +50 coins time bonus!";
+					timerBonus = 50;
+					coinsDelta += timerBonus;
 				} else {
 					// Exceeded time - penalty
-					coinsDelta -= 30;
-					timerMessage = " ⚠️ -30 coins time penalty!";
+					timerPenalty = -30;
+					coinsDelta += timerPenalty;
 				}
 			}
+
+			// Store the answer with outcome
+			const newAnswers = {
+				...team.answers,
+				[scenarioIndex]: {
+					choiceId,
+					timestamp: Date.now(),
+					outcome: {
+						coinsDelta,
+						cropsDelta,
+						timerBonus: timerBonus || undefined,
+						timerPenalty: timerPenalty || undefined,
+					},
+				},
+			};
+
+			// Update team resources
+			const updatedTeam = {
+				...team,
+				coins: team.coins + coinsDelta,
+				crops: team.crops + cropsDelta,
+				answers: newAnswers,
+			};
+
+			// Save to backend
+			try {
+				await fetch(`/api/teams/${teamId}/answer`, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ scenarioIndex, choiceId }),
+				});
+
+				await fetch(`/api/teams/${teamId}`, {
+					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(updatedTeam),
+				});
+			} catch (error) {
+				console.error("Failed to save answer to GCS", error);
+			}
+
+			// Update game state
+			const newState = {
+				...currentState!,
+				teams: {
+					...currentState!.teams,
+					[teamId]: updatedTeam,
+				},
+			};
+
+			await updateState(newState);
+
+			// Show success message
+			const timerMsg =
+				timerBonus > 0
+					? " ⚡ +50 bonus!"
+					: timerPenalty < 0
+					? " ⚠️ -30 penalty!"
+					: "";
+			toast.success(
+				`Answer submitted! ${
+					coinsDelta >= 0 ? "+" : ""
+				}${coinsDelta} coins, ${
+					cropsDelta >= 0 ? "+" : ""
+				}${cropsDelta} crops${timerMsg}`,
+				{ duration: 4000 }
+			);
+		},
+		[updateState]
+	);
+
+	const submitTimePenalty = useCallback(
+		async (teamId: TeamId, scenarioIndex: number) => {
+			// Get fresh state
+			let currentState: GameState;
+			setGameState((prevState) => {
+				currentState = prevState;
+				return prevState;
+			});
+
+			const team = currentState!.teams[teamId];
+
+			// Only apply -30 coins penalty, no choice effects
+			const coinsDelta = -30;
+			const cropsDelta = 0;
+
+			const newAnswers = {
+				...team.answers,
+				[scenarioIndex]: {
+					choiceId: "TIME_PENALTY_ONLY",
+					timestamp: Date.now(),
+					outcome: {
+						coinsDelta,
+						cropsDelta,
+						timerPenalty: -30,
+					},
+				},
+			};
 
 			const updatedTeam = {
 				...team,
@@ -291,7 +386,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 				await fetch(`/api/teams/${teamId}/answer`, {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ scenarioIndex, choiceId }),
+					body: JSON.stringify({
+						scenarioIndex,
+						choiceId: "TIME_PENALTY_ONLY",
+					}),
 				});
 
 				// Update team in GCS
@@ -301,7 +399,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 					body: JSON.stringify(updatedTeam),
 				});
 			} catch (error) {
-				console.error("Failed to save answer to GCS", error);
+				console.error("Failed to save penalty to GCS", error);
 			}
 
 			const newState = {
@@ -314,13 +412,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
 			await updateState(newState);
 
-			toast.success(
-				`Answer submitted! ${
-					coinsDelta >= 0 ? "+" : ""
-				}${coinsDelta} coins, ${
-					cropsDelta >= 0 ? "+" : ""
-				}${cropsDelta} crops${timerMessage}`,
-				{ duration: 4000 }
+			toast.error(
+				"⏰ Time's up! No answer selected. -30 coins penalty applied!",
+				{ duration: 5000 }
 			);
 		},
 		[updateState]
@@ -616,6 +710,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 					socket,
 					claimTeam,
 					submitAnswer,
+					submitTimePenalty,
 					startGame,
 					nextScenario,
 					showWinner,

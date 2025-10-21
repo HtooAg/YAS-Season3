@@ -91,11 +91,9 @@ export default function ResultsPage() {
 
 	if (!gameState.results || !myTeam) {
 		return (
-			<div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+			<div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
 				<div className="text-center">
-					<h2 className="text-xl font-bold text-slate-900">
-						Loading...
-					</h2>
+					<h2 className="text-xl font-bold text-white">Loading...</h2>
 				</div>
 			</div>
 		);
@@ -180,7 +178,7 @@ export default function ResultsPage() {
 	};
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 p-4 md:p-8 relative overflow-hidden">
+		<div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 md:p-8 relative overflow-hidden">
 			{/* Enhanced Fireworks animation */}
 			{fireworks.map((firework) => (
 				<motion.div
@@ -275,10 +273,10 @@ export default function ResultsPage() {
 						height={100}
 					/>
 					<div className="text-center">
-						<h1 className="text-3xl md:text-4xl font-bold text-slate-900">
+						<h1 className="text-3xl md:text-4xl font-bold text-white">
 							Game Complete!
 						</h1>
-						<p className="text-slate-600">Final Results</p>
+						<p className="text-slate-300">Final Results</p>
 					</div>
 				</motion.div>
 
@@ -335,15 +333,15 @@ export default function ResultsPage() {
 					transition={{ delay: 0.8 }}
 					className="mb-8"
 				>
-					<Card className="bg-white/90 backdrop-blur shadow-xl">
+					<Card className="bg-slate-800/90 backdrop-blur shadow-xl border-slate-700">
 						<CardContent className="pt-6 space-y-3">
 							{/* Team Name */}
-							<div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-								<span className="text-base font-semibold text-slate-700 flex items-center gap-2">
-									<Users className="w-5 h-5 text-[#4A8B8B]" />
+							<div className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
+								<span className="text-base font-semibold text-slate-200 flex items-center gap-2">
+									<Users className="w-5 h-5 text-[#5FABA8]" />
 									Team:
 								</span>
-								<span className="text-lg font-bold text-slate-900">
+								<span className="text-lg font-bold text-white">
 									Team {myTeam.id} - {myTeam.name}
 								</span>
 							</div>
@@ -360,23 +358,23 @@ export default function ResultsPage() {
 							</div>
 
 							{/* Final Coins */}
-							<div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-								<span className="text-base font-semibold text-slate-700 flex items-center gap-2">
-									<Coins className="w-5 h-5 text-[#4A8B8B]" />
+							<div className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
+								<span className="text-base font-semibold text-slate-200 flex items-center gap-2">
+									<Coins className="w-5 h-5 text-[#5FABA8]" />
 									Final Coins:
 								</span>
-								<span className="text-xl font-bold text-[#4A8B8B]">
+								<span className="text-xl font-bold text-[#5FABA8]">
 									💰 {myTeam.coins}
 								</span>
 							</div>
 
 							{/* Final Crops */}
-							<div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-								<span className="text-base font-semibold text-slate-700 flex items-center gap-2">
-									<Sprout className="w-5 h-5 text-green-600" />
+							<div className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
+								<span className="text-base font-semibold text-slate-200 flex items-center gap-2">
+									<Sprout className="w-5 h-5 text-green-400" />
 									Final Crops:
 								</span>
-								<span className="text-xl font-bold text-green-600">
+								<span className="text-xl font-bold text-green-400">
 									🌾 {myTeam.crops}
 								</span>
 							</div>
@@ -390,9 +388,9 @@ export default function ResultsPage() {
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ delay: 1 }}
 				>
-					<Card className="bg-white/90 backdrop-blur shadow-xl">
+					<Card className="bg-slate-800/90 backdrop-blur shadow-xl border-slate-700">
 						<CardContent className="pt-6">
-							<h3 className="text-xl font-bold text-center text-slate-800 mb-4">
+							<h3 className="text-xl font-bold text-center text-white mb-4">
 								Final Standings
 							</h3>
 							<div className="space-y-2">
@@ -412,14 +410,14 @@ export default function ResultsPage() {
 												}}
 												className={`flex items-center justify-between p-3 rounded-lg transition-all ${
 													isMyTeam
-														? "bg-[#4A8B8B]/20 border-2 border-[#4A8B8B] shadow-md"
+														? "bg-[#4A8B8B]/30 border-2 border-[#5FABA8] shadow-md"
 														: rank === 1
-														? "bg-yellow-50 border border-yellow-200"
+														? "bg-yellow-900/30 border border-yellow-600"
 														: rank === 2
-														? "bg-slate-50 border border-slate-200"
+														? "bg-slate-700/50 border border-slate-500"
 														: rank === 3
-														? "bg-amber-50 border border-amber-200"
-														: "bg-slate-50 border border-slate-200"
+														? "bg-amber-900/30 border border-amber-600"
+														: "bg-slate-700/30 border border-slate-600"
 												}`}
 											>
 												<div className="flex items-center gap-3">
@@ -446,12 +444,12 @@ export default function ResultsPage() {
 
 													{/* Team Info */}
 													<div>
-														<div className="font-bold text-base text-slate-900">
+														<div className="font-bold text-base text-white">
 															Team {entry.id} -{" "}
 															{team.name}
 														</div>
 														{team.crop && (
-															<div className="text-xs text-slate-600">
+															<div className="text-xs text-slate-300">
 																{team.crop}
 															</div>
 														)}
@@ -460,10 +458,10 @@ export default function ResultsPage() {
 
 												{/* Score */}
 												<div className="text-right">
-													<div className="text-xl font-bold text-slate-900">
+													<div className="text-xl font-bold text-white">
 														{entry.total}
 													</div>
-													<div className="text-xs text-slate-600">
+													<div className="text-xs text-slate-300">
 														points
 													</div>
 												</div>

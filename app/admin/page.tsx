@@ -571,43 +571,114 @@ export default function AdminPage() {
 												{choice.label}
 											</div>
 											{choice.desc && (
-												<div className="text-sm text-slate-600 mb-2">
-													{choice.desc}
+												<div className="text-sm text-slate-600 mb-2 whitespace-pre-line">
+													{typeof choice.desc ===
+													"function"
+														? "[Dynamic description based on team state]"
+														: choice.desc}
 												</div>
 											)}
 											<div className="flex gap-4 text-sm">
-												{choice.coinsDelta !==
-													undefined && (
+												{choice.coinsDelta != null && (
 													<span
 														className={
-															choice.coinsDelta >=
-															0
+															typeof choice.coinsDelta ===
+															"function"
+																? "text-blue-600"
+																: choice.coinsDelta >=
+																  0
 																? "text-green-600"
 																: "text-red-600"
 														}
 													>
 														Coins:{" "}
-														{choice.coinsDelta >= 0
-															? "+"
-															: ""}
-														{choice.coinsDelta}
+														{typeof choice.coinsDelta ===
+														"function"
+															? (() => {
+																	// Calculate actual outcome using a sample team
+																	// Use first team's state or default values
+																	const sampleTeam =
+																		Object.values(
+																			gameState.teams
+																		).find(
+																			(
+																				t
+																			) =>
+																				t.claimedBy
+																		) || {
+																			coins: 1000,
+																			crops: 10,
+																		};
+																	const coinsResult =
+																		choice.coinsDelta(
+																			sampleTeam
+																		);
+																	return `${
+																		coinsResult >=
+																		0
+																			? "+"
+																			: ""
+																	}${coinsResult}`;
+															  })()
+															: `${
+																	choice.coinsDelta >=
+																	0
+																		? "+"
+																		: ""
+															  }${
+																	choice.coinsDelta
+															  }`}
 													</span>
 												)}
-												{choice.cropsDelta !==
-													undefined && (
+												{choice.cropsDelta != null && (
 													<span
 														className={
-															choice.cropsDelta >=
-															0
+															typeof choice.cropsDelta ===
+															"function"
+																? "text-blue-600"
+																: choice.cropsDelta >=
+																  0
 																? "text-green-600"
 																: "text-red-600"
 														}
 													>
 														Crops:{" "}
-														{choice.cropsDelta >= 0
-															? "+"
-															: ""}
-														{choice.cropsDelta}
+														{typeof choice.cropsDelta ===
+														"function"
+															? (() => {
+																	// Calculate actual outcome using a sample team
+																	// Use first team's state or default values
+																	const sampleTeam =
+																		Object.values(
+																			gameState.teams
+																		).find(
+																			(
+																				t
+																			) =>
+																				t.claimedBy
+																		) || {
+																			coins: 1000,
+																			crops: 10,
+																		};
+																	const cropsResult =
+																		choice.cropsDelta(
+																			sampleTeam
+																		);
+																	return `${
+																		cropsResult >=
+																		0
+																			? "+"
+																			: ""
+																	}${cropsResult}`;
+															  })()
+															: `${
+																	choice.cropsDelta >=
+																	0
+																		? "+"
+																		: ""
+															  }${
+																	choice.cropsDelta
+															  }`}
 													</span>
 												)}
 											</div>

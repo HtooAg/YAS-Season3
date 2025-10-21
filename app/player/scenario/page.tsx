@@ -26,7 +26,7 @@ import toast from "react-hot-toast";
 
 export default function ScenarioPage() {
 	const router = useRouter();
-	const { gameState, submitAnswer } = useGame();
+	const { gameState, submitAnswer, submitTimePenalty } = useGame();
 	const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
 
 	// Get team ID from session storage
@@ -76,7 +76,7 @@ export default function ScenarioPage() {
 		}
 	}, [myTeamId, router]);
 
-	// Timer countdown effect
+	// Timer countdown effect with auto-submit
 	useEffect(() => {
 		if (
 			gameState.phase === "running" &&
@@ -108,10 +108,24 @@ export default function ScenarioPage() {
 				if (seconds === 0 && !timePenaltyApplied && !showRulesAlert) {
 					setShowRulesAlert(true);
 					setTimePenaltyApplied(true);
-					toast.error(
-						"⏰ Time's up! -30 coins penalty for exceeding time limit!",
-						{ duration: 5000 }
-					);
+
+					// Auto-submit based on whether a choice was selected
+					if (myTeamId) {
+						if (selectedChoice) {
+							// Submit the selected choice with time penalty
+							submitAnswer(
+								myTeamId,
+								gameState.scenarioIndex,
+								selectedChoice
+							);
+						} else {
+							// No choice selected - only apply -30 coins penalty
+							submitTimePenalty(
+								myTeamId,
+								gameState.scenarioIndex
+							);
+						}
+					}
 				}
 			}, 100);
 
@@ -127,51 +141,33 @@ export default function ScenarioPage() {
 		showTimeWarning,
 		timePenaltyApplied,
 		showRulesAlert,
+		myTeamId,
+		currentScenario,
+		selectedChoice,
+		gameState.scenarioIndex,
+		submitAnswer,
+		submitTimePenalty,
 	]);
 
-	// Calculate outcome when answer is submitted
+	// Get outcome from stored answer
 	useEffect(() => {
-		if (hasAnswered && currentScenario && myTeam) {
+		if (hasAnswered && myTeam) {
 			const answer = myTeam.answers[gameState.scenarioIndex];
-			const choice = currentScenario.choices.find(
-				(c) => c.id === answer.choiceId
-			);
 
-			if (choice) {
-				let coinsDelta = choice.coinsDelta || 0;
-				let cropsDelta = choice.cropsDelta || 0;
-				let timerBonus = 0;
-				let timerPenalty = 0;
-
-				if (gameState.adminOnly && gameState.adminOnly.timerEnabled) {
-					if (timeRemaining !== null && timeRemaining > 0) {
-						timerBonus = 50;
-						coinsDelta += timerBonus;
-					} else if (timePenaltyApplied) {
-						timerPenalty = -30;
-						coinsDelta += timerPenalty;
-					}
-				}
-
+			// Use the stored outcome if available
+			if (answer.outcome) {
+				setOutcome(answer.outcome);
+			} else {
+				// Fallback for old answers without stored outcomes
 				setOutcome({
-					coinsDelta,
-					cropsDelta,
-					timerBonus,
-					timerPenalty,
+					coinsDelta: 0,
+					cropsDelta: 0,
 				});
 			}
 		} else {
 			setOutcome(null);
 		}
-	}, [
-		hasAnswered,
-		currentScenario,
-		myTeam,
-		gameState.scenarioIndex,
-		gameState.adminOnly,
-		timeRemaining,
-		timePenaltyApplied,
-	]);
+	}, [hasAnswered, myTeam, gameState.scenarioIndex]);
 
 	// Reset timer states when scenario changes
 	useEffect(() => {
@@ -308,46 +304,6 @@ export default function ScenarioPage() {
 					</motion.div>
 				)}
 
-				{/* Time Expired Alert */}
-				{showRulesAlert && !hasAnswered && (
-					<motion.div
-						initial={{ opacity: 0, y: -20 }}
-						animate={{ opacity: 1, y: 0 }}
-						className="mb-4"
-					>
-						<Alert
-							variant="destructive"
-							className="bg-red-50 border-red-500"
-						>
-							<AlertTriangle className="h-5 w-5" />
-							<AlertDescription>
-								<div className="font-bold text-red-900 mb-2 text-lg">
-									⏰ Time Limit Exceeded - Penalty Applied!
-								</div>
-								<div className="space-y-2 text-red-800">
-									<p className="font-semibold">
-										Game Rules & Penalties:
-									</p>
-									<ul className="list-disc list-inside space-y-1 text-sm">
-										<li>
-											<strong>-30 Coins</strong> penalty
-											for exceeding time limit
-										</li>
-										<li>
-											Your decision-making speed affects
-											your farm's profitability
-										</li>
-										<li>
-											Late decisions can lead to missed
-											opportunities and resource waste
-										</li>
-									</ul>
-								</div>
-							</AlertDescription>
-						</Alert>
-					</motion.div>
-				)}
-
 				{/* Resources */}
 				<div className="grid grid-cols-2 gap-4 mb-6">
 					<Card>
@@ -417,45 +373,81 @@ export default function ScenarioPage() {
 												{choice.label}
 											</div>
 											{choice.desc && (
-												<div className="text-sm text-slate-600">
+												<div className="text-sm text-slate-600 whitespace-pre-line">
 													{choice.desc}
 												</div>
 											)}
 											<div className="flex gap-4 mt-2 text-sm">
 												{choice.coinsDelta !==
-													undefined && (
-													<span
-														className={
-															choice.coinsDelta >=
-															0
-																? "text-green-600"
-																: "text-red-600"
-														}
-													>
-														Coins:{" "}
-														{choice.coinsDelta >= 0
-															? "+"
-															: ""}
-														{choice.coinsDelta}
-													</span>
-												)}
+													undefined &&
+													myTeam && (
+														<span
+															className={(() => {
+																const value =
+																	typeof choice.coinsDelta ===
+																	"function"
+																		? choice.coinsDelta(
+																				myTeam
+																		  )
+																		: choice.coinsDelta;
+																return value >=
+																	0
+																	? "text-green-600 font-semibold"
+																	: "text-red-600 font-semibold";
+															})()}
+														>
+															Coins:{" "}
+															{(() => {
+																const value =
+																	typeof choice.coinsDelta ===
+																	"function"
+																		? choice.coinsDelta(
+																				myTeam
+																		  )
+																		: choice.coinsDelta;
+																return `${
+																	value >= 0
+																		? "+"
+																		: ""
+																}${value}`;
+															})()}
+														</span>
+													)}
 												{choice.cropsDelta !==
-													undefined && (
-													<span
-														className={
-															choice.cropsDelta >=
-															0
-																? "text-green-600"
-																: "text-red-600"
-														}
-													>
-														Crops:{" "}
-														{choice.cropsDelta >= 0
-															? "+"
-															: ""}
-														{choice.cropsDelta}
-													</span>
-												)}
+													undefined &&
+													myTeam && (
+														<span
+															className={(() => {
+																const value =
+																	typeof choice.cropsDelta ===
+																	"function"
+																		? choice.cropsDelta(
+																				myTeam
+																		  )
+																		: choice.cropsDelta;
+																return value >=
+																	0
+																	? "text-green-600 font-semibold"
+																	: "text-red-600 font-semibold";
+															})()}
+														>
+															Crops:{" "}
+															{(() => {
+																const value =
+																	typeof choice.cropsDelta ===
+																	"function"
+																		? choice.cropsDelta(
+																				myTeam
+																		  )
+																		: choice.cropsDelta;
+																return `${
+																	value >= 0
+																		? "+"
+																		: ""
+																}${value}`;
+															})()}
+														</span>
+													)}
 											</div>
 										</button>
 									))}
@@ -464,11 +456,13 @@ export default function ScenarioPage() {
 
 							<Button
 								onClick={handleSubmitAnswer}
-								disabled={!selectedChoice}
-								className="w-full bg-[#4A8B8B] hover:bg-[#3A7575] text-white"
+								disabled={!selectedChoice || isTimeExpired}
+								className="w-full bg-[#4A8B8B] hover:bg-[#3A7575] text-white disabled:opacity-50 disabled:cursor-not-allowed"
 								size="lg"
 							>
-								Submit Answer
+								{isTimeExpired
+									? "Time Expired - Auto-Submitting..."
+									: "Submit Answer"}
 							</Button>
 						</motion.div>
 					) : (
@@ -578,63 +572,186 @@ export default function ScenarioPage() {
 												</div>
 											</div>
 
+											{/* Final Resources After Outcome */}
+											<div className="p-4 bg-gradient-to-r from-[#4A8B8B]/10 to-[#5FABA8]/10 rounded-lg border-2 border-[#4A8B8B]">
+												<p className="text-sm font-bold text-[#4A8B8B] mb-3 text-center">
+													📊 Your Farm After This
+													Decision:
+												</p>
+												<div className="grid grid-cols-2 gap-3">
+													<div className="flex items-center justify-between p-3 bg-white rounded-lg">
+														<div className="flex items-center gap-2">
+															<Coins className="w-5 h-5 text-[#4A8B8B]" />
+															<span className="text-sm font-medium text-slate-700">
+																Coins:
+															</span>
+														</div>
+														<span className="text-lg font-bold text-slate-900">
+															{myTeam?.coins || 0}
+														</span>
+													</div>
+													<div className="flex items-center justify-between p-3 bg-white rounded-lg">
+														<div className="flex items-center gap-2">
+															<Sprout className="w-5 h-5 text-green-600" />
+															<span className="text-sm font-medium text-slate-700">
+																Crops:
+															</span>
+														</div>
+														<span className="text-lg font-bold text-slate-900">
+															{myTeam?.crops || 0}
+														</span>
+													</div>
+												</div>
+											</div>
+
 											{/* Explanation */}
-											<div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-												<p className="text-sm text-blue-900">
+											<div
+												className={`p-4 rounded-lg border ${
+													outcome.coinsDelta ===
+														-30 &&
+													outcome.cropsDelta === 0 &&
+													outcome.timerPenalty
+														? "bg-red-50 border-red-200"
+														: "bg-blue-50 border-blue-200"
+												}`}
+											>
+												<p
+													className={`text-sm font-semibold ${
+														outcome.coinsDelta ===
+															-30 &&
+														outcome.cropsDelta ===
+															0 &&
+														outcome.timerPenalty
+															? "text-red-900"
+															: "text-blue-900"
+													}`}
+												>
 													<strong>
 														Impact on your farm:
 													</strong>
 												</p>
-												<ul className="list-disc list-inside text-sm text-blue-800 mt-2 space-y-1">
-													{outcome.coinsDelta > 0 && (
-														<li>
-															Your decision
-															generated additional
-															revenue for your
-															farm
-														</li>
-													)}
-													{outcome.coinsDelta < 0 && (
-														<li>
-															This investment will
-															cost you now but may
-															benefit you later
-														</li>
-													)}
-													{outcome.cropsDelta > 0 && (
-														<li>
-															Your crop yield has
-															increased - more
-															produce to sell!
-														</li>
-													)}
-													{outcome.cropsDelta < 0 && (
-														<li>
-															Some crops were
-															lost, but this may
-															prevent bigger
-															losses
-														</li>
-													)}
-													{outcome.timerBonus &&
-														outcome.timerBonus >
-															0 && (
-															<li className="text-green-700 font-semibold">
-																Quick
+												<ul
+													className={`list-disc list-inside text-sm mt-2 space-y-1 ${
+														outcome.coinsDelta ===
+															-30 &&
+														outcome.cropsDelta ===
+															0 &&
+														outcome.timerPenalty
+															? "text-red-800"
+															: "text-blue-800"
+													}`}
+												>
+													{outcome.coinsDelta ===
+														-30 &&
+													outcome.cropsDelta === 0 &&
+													outcome.timerPenalty ? (
+														<>
+															<li className="font-semibold">
+																⏰ Time expired
+																without making a
+																decision
+															</li>
+															<li>
+																No choice was
+																selected, so
+																only the time
+																penalty was
+																applied
+															</li>
+															<li>
+																In farming,
+																indecision costs
+																money - delays
+																in
 																decision-making
-																earned you a
-																time bonus!
+																lead to missed
+																opportunities
 															</li>
-														)}
-													{outcome.timerPenalty &&
-														outcome.timerPenalty <
-															0 && (
-															<li className="text-red-700 font-semibold">
-																Delayed response
-																resulted in
-																additional costs
+															<li>
+																Make faster
+																decisions in
+																future scenarios
+																to avoid
+																penalties
 															</li>
-														)}
+														</>
+													) : (
+														<>
+															{outcome.coinsDelta >
+																0 && (
+																<li>
+																	Your
+																	decision
+																	generated
+																	additional
+																	revenue for
+																	your farm
+																</li>
+															)}
+															{outcome.coinsDelta <
+																0 &&
+																!outcome.timerPenalty && (
+																	<li>
+																		This
+																		investment
+																		will
+																		cost you
+																		now but
+																		may
+																		benefit
+																		you
+																		later
+																	</li>
+																)}
+															{outcome.cropsDelta >
+																0 && (
+																<li>
+																	Your crop
+																	yield has
+																	increased -
+																	more produce
+																	to sell!
+																</li>
+															)}
+															{outcome.cropsDelta <
+																0 && (
+																<li>
+																	Some crops
+																	were lost,
+																	but this may
+																	prevent
+																	bigger
+																	losses
+																</li>
+															)}
+															{outcome.timerBonus &&
+																outcome.timerBonus >
+																	0 && (
+																	<li className="text-green-700 font-semibold">
+																		Quick
+																		decision-making
+																		earned
+																		you a
+																		time
+																		bonus!
+																	</li>
+																)}
+															{outcome.timerPenalty &&
+																outcome.timerPenalty <
+																	0 &&
+																outcome.coinsDelta !==
+																	-30 && (
+																	<li className="text-red-700 font-semibold">
+																		Delayed
+																		response
+																		resulted
+																		in
+																		additional
+																		costs
+																	</li>
+																)}
+														</>
+													)}
 												</ul>
 											</div>
 										</CardContent>

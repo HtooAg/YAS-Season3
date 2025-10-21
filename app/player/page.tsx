@@ -212,8 +212,18 @@ export default function PlayerPage() {
 			);
 
 			if (choice) {
-				let coinsDelta = choice.coinsDelta || 0;
-				let cropsDelta = choice.cropsDelta || 0;
+				let coinsDelta =
+					typeof choice.coinsDelta === "function" && myTeam
+						? choice.coinsDelta(myTeam)
+						: typeof choice.coinsDelta === "number"
+						? choice.coinsDelta
+						: 0;
+				let cropsDelta =
+					typeof choice.cropsDelta === "function" && myTeam
+						? choice.cropsDelta(myTeam)
+						: typeof choice.cropsDelta === "number"
+						? choice.cropsDelta
+						: 0;
 				let timerBonus = 0;
 				let timerPenalty = 0;
 
@@ -731,49 +741,96 @@ export default function PlayerPage() {
 														{choice.label}
 													</div>
 													{choice.desc && (
-														<div className="text-sm text-slate-600">
-															{choice.desc}
+														<div className="text-sm text-slate-600 whitespace-pre-line">
+															{typeof choice.desc ===
+																"function" &&
+															myTeam
+																? choice.desc(
+																		myTeam
+																  )
+																: typeof choice.desc ===
+																  "string"
+																? choice.desc
+																: "[Dynamic description]"}
 														</div>
 													)}
 													<div className="flex gap-4 mt-2 text-sm">
-														{choice.coinsDelta !==
-															undefined && (
+														{(choice.coinsDelta !==
+															undefined ||
+															typeof choice.coinsDelta ===
+																"function") && (
 															<span
 																className={
-																	choice.coinsDelta >=
+																	(typeof choice.coinsDelta ===
+																		"function" &&
+																	myTeam
+																		? choice.coinsDelta(
+																				myTeam
+																		  )
+																		: choice.coinsDelta ||
+																		  0) >=
 																	0
 																		? "text-green-600"
 																		: "text-red-600"
 																}
 															>
 																Coins:{" "}
-																{choice.coinsDelta >=
-																0
+																{(typeof choice.coinsDelta ===
+																	"function" &&
+																myTeam
+																	? choice.coinsDelta(
+																			myTeam
+																	  )
+																	: choice.coinsDelta ||
+																	  0) >= 0
 																	? "+"
 																	: ""}
-																{
-																	choice.coinsDelta
-																}
+																{typeof choice.coinsDelta ===
+																	"function" &&
+																myTeam
+																	? choice.coinsDelta(
+																			myTeam
+																	  )
+																	: choice.coinsDelta}
 															</span>
 														)}
-														{choice.cropsDelta !==
-															undefined && (
+														{(choice.cropsDelta !==
+															undefined ||
+															typeof choice.cropsDelta ===
+																"function") && (
 															<span
 																className={
-																	choice.cropsDelta >=
+																	(typeof choice.cropsDelta ===
+																		"function" &&
+																	myTeam
+																		? choice.cropsDelta(
+																				myTeam
+																		  )
+																		: choice.cropsDelta ||
+																		  0) >=
 																	0
 																		? "text-green-600"
 																		: "text-red-600"
 																}
 															>
 																Crops:{" "}
-																{choice.cropsDelta >=
-																0
+																{(typeof choice.cropsDelta ===
+																	"function" &&
+																myTeam
+																	? choice.cropsDelta(
+																			myTeam
+																	  )
+																	: choice.cropsDelta ||
+																	  0) >= 0
 																	? "+"
 																	: ""}
-																{
-																	choice.cropsDelta
-																}
+																{typeof choice.cropsDelta ===
+																	"function" &&
+																myTeam
+																	? choice.cropsDelta(
+																			myTeam
+																	  )
+																	: choice.cropsDelta}
 															</span>
 														)}
 													</div>

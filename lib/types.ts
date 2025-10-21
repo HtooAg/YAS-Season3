@@ -12,6 +12,12 @@ export type TeamState = {
 		{
 			choiceId: string;
 			timestamp: number;
+			outcome?: {
+				coinsDelta: number;
+				cropsDelta: number;
+				timerBonus?: number;
+				timerPenalty?: number;
+			};
 		}
 	>;
 	notes?: string;
@@ -21,13 +27,8 @@ export type Choice = {
 	id: string;
 	label: string;
 	desc?: string;
-	coinsDelta?: number;
-	cropsDelta?: number;
-	fx?: (team: TeamState) => {
-		coinsDelta?: number;
-		cropsDelta?: number;
-		note?: string;
-	};
+	coinsDelta?: number | ((team: TeamState) => number);
+	cropsDelta?: number | ((team: TeamState) => number);
 };
 
 export type Scenario = {
